@@ -1,4 +1,4 @@
-import 'dashboard_page.dart';
+import 'package:go_router/go_router.dart';
 import 'theme_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -116,14 +116,10 @@ class _AlarmsPageState extends State<AlarmsPage>
                     children: [
                       IconButton(
                         onPressed: () {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
+                          if (context.canPop()) {
+                            context.pop();
                           } else {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (_) => const DashboardPage()),
-                              (route) => false,
-                            );
+                            context.go('/');
                           }
                         },
                         icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _kGreen700, size: 20),
