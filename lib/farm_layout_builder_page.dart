@@ -1,4 +1,4 @@
-import 'dashboard_page.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -872,14 +872,10 @@ class _FarmLayoutBuilderPageState extends State<FarmLayoutBuilderPage> {
               children: [
                 IconButton(
                   onPressed: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
+                    if (context.canPop()) {
+                      context.pop();
                     } else {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DashboardPage()),
-                        (route) => false,
-                      );
+                      context.go('/');
                     }
                   },
                   icon: Icon(Icons.arrow_back_ios_new_rounded, color: _kGreen700, size: 18),

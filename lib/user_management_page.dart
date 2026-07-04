@@ -1,4 +1,4 @@
-import 'dashboard_page.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -496,14 +496,10 @@ class _UserManagementPageState extends State<UserManagementPage> {
               children: [
                 IconButton(
                   onPressed: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
+                    if (context.canPop()) {
+                      context.pop();
                     } else {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DashboardPage()),
-                        (route) => false,
-                      );
+                      context.go('/');
                     }
                   },
                   icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : const Color(0xFF1B5E20), size: 18),

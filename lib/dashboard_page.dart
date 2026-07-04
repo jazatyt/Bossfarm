@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -11,7 +12,6 @@ import 'notifications_page.dart';
 import 'services/sensor_api_service.dart';
 import 'widgets/farm_card.dart';
 import 'widgets/multi_line_chart.dart';
-import 'all_farms_page.dart';
 import 'sensor_alert.dart';
 import 'services/alarm_service.dart';
 import 'widgets/alarm_banner_widget.dart';
@@ -157,10 +157,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (showAll)
         GestureDetector(
           onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AllFarmsPage(filterType: filterType)),
-            );
+            await context.push('/farms', extra: filterType);
             _loadDisplayNames();
           },
           child: Row(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dashboard_page.dart';
-import 'register_page.dart';
 import 'services/auth_service.dart';
 import 'theme_manager.dart';
 
@@ -61,7 +60,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
     if (result['status'] == 'success') {
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
+        context.go('/');
       }
     } else {
       if (mounted) {
@@ -273,8 +272,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           style: GoogleFonts.inter(color: mutedColor, fontSize: 14),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.push(
-                            context, MaterialPageRoute(builder: (_) => const RegisterPage())),
+                          onTap: () => context.push('/register'),
                           child: Text(
                             'สมัครสมาชิก',
                             style: GoogleFonts.inter(

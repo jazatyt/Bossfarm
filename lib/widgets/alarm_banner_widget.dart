@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/alarm_service.dart';
-import '../alarms_page.dart';
 
 // ── Theme constants ──────────────────────────────────────────────────────────
 const _kGreen700      = Color(0xFF2E7D32);
@@ -25,8 +25,7 @@ class AlarmBannerWidget extends StatelessWidget {
     final total    = alarmService.totalActive;
 
     return GestureDetector(
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const AlarmsPage())),
+      onTap: () => context.push('/alarms'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -105,8 +104,7 @@ class AlarmBannerWidget extends StatelessWidget {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => AlarmsPage(initialIndex: index))),
+        onTap: () => context.push('/alarms', extra: index),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(

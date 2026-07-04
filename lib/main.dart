@@ -1,9 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_page.dart';
+import 'register_page.dart';
 import 'dashboard_page.dart';
+import 'alarms_page.dart';
+import 'history_view_page.dart';
+import 'farm_layout_builder_page.dart';
+import 'user_management_page.dart';
+import 'all_farms_page.dart';
 import 'theme_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
+final _router = GoRouter(
+  initialLocation: '/',
+  redirect: (context, state) {
+    final loggedIn =
+        Hive.box('auth_box').get('isLoggedIn', defaultValue: false) as bool;
+    final loc = state.matchedLocation;
+    final unauthed = loc == '/login' || loc == '/register';
+    if (!loggedIn) return unauthed ? null : '/login';
+    if (unauthed) return '/';
+    return null;
+  },
+  routes: [
+    GoRoute(path: '/', builder: (c, s) => const DashboardPage()),
+    GoRoute(path: '/login', builder: (c, s) => const LoginPage()),
+    GoRoute(path: '/register', builder: (c, s) => const RegisterPage()),
+    GoRoute(
+        path: '/alarms',
+        builder: (c, s) => AlarmsPage(initialIndex: (s.extra as int?) ?? 0)),
+    GoRoute(path: '/history', builder: (c, s) => const HistoryViewPage()),
+    GoRoute(path: '/layout', builder: (c, s) => const FarmLayoutBuilderPage()),
+    GoRoute(path: '/settings', builder: (c, s) => const UserManagementPage()),
+    GoRoute(
+        path: '/farms',
+        builder: (c, s) => AllFarmsPage(filterType: (s.extra as String?) ?? '')),
+  ],
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,13 +50,6 @@ void main() async {
 
 class SmartFarmApp extends StatelessWidget {
   const SmartFarmApp({super.key});
-
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-  bool _checkLoginStatus() {
-    final box = Hive.box('auth_box');
-    return box.get('isLoggedIn', defaultValue: false);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +80,8 @@ class SmartFarmApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeManager.themeMode,
       builder: (context, mode, child) {
-        return MaterialApp(
-          key: const ValueKey('SmartFarmAppRoot'),
-          navigatorKey: navigatorKey,
+        return MaterialApp.router(
+          routerConfig: _router,
           title: 'BOSS FARM',
           debugShowCheckedModeBanner: false,
           themeMode: mode,
@@ -68,7 +94,6 @@ class SmartFarmApp extends StatelessWidget {
               child: child!,
             );
           },
-          home: _checkLoginStatus() ? const DashboardPage() : const LoginPage(),
         );
       },
     );

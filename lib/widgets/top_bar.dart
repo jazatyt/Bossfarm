@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme_manager.dart';
 import '../services/auth_service.dart';
-import '../login_page.dart';
-import '../history_view_page.dart';
-import '../dashboard_page.dart';
-import '../farm_layout_builder_page.dart';
-import '../user_management_page.dart';
 import '../services/layout_api_service.dart';
-import '../all_farms_page.dart';
-import '../alarms_page.dart';
 import '../services/alarm_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:async';
@@ -127,10 +121,7 @@ class _TopBarState extends State<TopBar> {
         children: [
           // Brand Logo & Name (Click to go Home)
           GestureDetector(
-            onTap: () => Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const DashboardPage()),
-                (route) => false),
+            onTap: () => context.go('/'),
             onLongPress: _isAdmin ? _pickLogo : null,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
@@ -194,8 +185,7 @@ class _TopBarState extends State<TopBar> {
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (_) => const AlarmsPage())),
+                    onPressed: () => context.go('/alarms'),
                     icon: Icon(Icons.notifications_none_rounded,
                         color: textMuted, size: isSmall ? 20 : 24),
                     tooltip: 'Alarms',
@@ -222,18 +212,18 @@ class _TopBarState extends State<TopBar> {
                 ],
               ),
               IconButton(
-                onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HistoryViewPage())),
+                onPressed: () => context.go('/history'),
                 icon: Icon(Icons.history_rounded, color: textMuted, size: isSmall ? 20 : 24),
                 tooltip: 'View History',
               ),
               IconButton(
-                onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const FarmLayoutBuilderPage())),
+                onPressed: () => context.go('/layout'),
                 icon: Icon(Icons.grid_view_rounded, color: textMuted, size: isSmall ? 18 : 22),
                 tooltip: 'Farm Layout',
               ),
               if (_isAdmin)
                 IconButton(
-                  onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const UserManagementPage())),
+                  onPressed: () => context.go('/settings'),
                   icon: Icon(Icons.settings_suggest_rounded, color: Colors.blue.shade400, size: isSmall ? 20 : 24),
                   tooltip: 'Management',
                 ),
@@ -253,7 +243,7 @@ class _TopBarState extends State<TopBar> {
           IconButton(
             onPressed: () {
               AuthService.logout();
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (r) => false);
+              context.go('/login');
             },
             icon: Icon(Icons.logout_rounded, color: Colors.red.shade400, size: isSmall ? 18 : 22),
             tooltip: 'Logout',
