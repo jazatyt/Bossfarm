@@ -1,0 +1,47 @@
+name: smartfarm
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0
+  fl_chart: ^0.68.0
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  intl: ^0.19.0
+  file_picker: ^6.1.1
+  excel: ^4.0.0
+  path_provider: ^2.1.2
+  universal_html: ^2.2.4
+  crop_your_image: ^1.1.0
+  phosphor_flutter: ^2.1.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.6
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "img/logo2.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+
+flutter:
+  uses-material-design: true
+  assets:
+    - img/
