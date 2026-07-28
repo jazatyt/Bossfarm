@@ -780,11 +780,20 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
             data: _filteredData
                 .map((s) => {
                       '_time': s.time.toIso8601String(),
-                      '_value': s.humidity != 0.0 ? s.humidity : s.soilMoisture
+                      '_value': s.temperature
+                    })
+                .toList(),
+            color: const Color(0xFFFF7043),
+            label: 'Temp'),
+        ChartSeries(
+            data: _filteredData
+                .map((s) => {
+                      '_time': s.time.toIso8601String(),
+                      '_value': s.soilMoisture
                     })
                 .toList(),
             color: const Color(0xFF29B6F6),
-            label: 'RH'),
+            label: 'Moisture'),
         ChartSeries(
             data: _filteredData
                 .map((s) =>
@@ -793,6 +802,36 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
             color: const Color(0xFF66BB6A),
             label: 'EC',
             normalize: 0.1),
+        ChartSeries(
+            data: _filteredData
+                .map((s) => {
+                      '_time': s.time.toIso8601String(),
+                      '_value': s.nitrogen
+                    })
+                .toList(),
+            color: const Color(0xFF9CCC65),
+            label: 'N',
+            normalize: 10.0),
+        ChartSeries(
+            data: _filteredData
+                .map((s) => {
+                      '_time': s.time.toIso8601String(),
+                      '_value': s.phosphorus
+                    })
+                .toList(),
+            color: const Color(0xFFFFB74D),
+            label: 'P',
+            normalize: 10.0),
+        ChartSeries(
+            data: _filteredData
+                .map((s) => {
+                      '_time': s.time.toIso8601String(),
+                      '_value': s.potassium
+                    })
+                .toList(),
+            color: const Color(0xFFBA68C8),
+            label: 'K',
+            normalize: 10.0),
       ];
     } else if (type == 'mineral') {
       series = [
@@ -901,8 +940,12 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
   Widget _buildChartLegend(String type) {
     if (type == 'soil') {
       return Wrap(spacing: 12, runSpacing: 4, children: [
-        _legendItem(const Color(0xFF29B6F6), 'RH'),
+        _legendItem(const Color(0xFFFF7043), 'Temp'),
+        _legendItem(const Color(0xFF29B6F6), 'Moisture'),
         _legendItem(const Color(0xFF66BB6A), 'EC'),
+        _legendItem(const Color(0xFF9CCC65), 'N'),
+        _legendItem(const Color(0xFFFFB74D), 'P'),
+        _legendItem(const Color(0xFFBA68C8), 'K'),
       ]);
     } else if (type == 'mineral') {
       return Wrap(spacing: 12, runSpacing: 4, children: [
