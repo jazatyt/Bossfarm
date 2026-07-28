@@ -6,7 +6,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:fl_chart/fl_chart.dart';
 import 'notifications_page.dart';
 
 import 'services/sensor_api_service.dart';
@@ -323,13 +322,13 @@ class _DashboardPageState extends State<DashboardPage> {
           ] else ...[
             _buildSectionHeader('Soil Sensors', showAll: true, filterType: 'soil'),
             const SizedBox(height: 12),
-            _buildPlaceholderCard('Soil EC & RH', 'No soil nodes found', Icons.grass_rounded),
+            _buildPlaceholderCard('Soil Sensors', 'No soil nodes found', Icons.grass_rounded),
             const SizedBox(height: 20),
           ],
           if (mineralId != null) ...[
             _buildSectionHeader('Mineral Sensor', showAll: true, filterType: 'mineral'),
             const SizedBox(height: 12),
-            _buildNpkPieCard(mineralId, _manager.apiServices[mineralId]!, _manager.errorMap[mineralId] ?? false),
+            _buildMineralCard(mineralId, _manager.apiServices[mineralId]!, _manager.errorMap[mineralId] ?? false),
           ] else ...[
             _buildSectionHeader('Mineral Sensor', showAll: true, filterType: 'mineral'),
             const SizedBox(height: 12),
@@ -353,7 +352,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Expanded(
                       child: soilId != null 
                         ? _buildCombinedSoilCard(soilId, _manager.apiServices[soilId]!, _manager.errorMap[soilId] ?? false)
-                        : _buildPlaceholderCard('Soil EC & RH', 'No soil nodes connected', Icons.grass_rounded),
+                        : _buildPlaceholderCard('Soil Sensors', 'No soil nodes connected', Icons.grass_rounded),
                     ),
                   ],
                 ),
@@ -366,7 +365,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 12),
                     Expanded(
                       child: mineralId != null 
-                        ? _buildNpkPieCard(mineralId, _manager.apiServices[mineralId]!, _manager.errorMap[mineralId] ?? false)
+                        ? _buildMineralCard(mineralId, _manager.apiServices[mineralId]!, _manager.errorMap[mineralId] ?? false)
                         : _buildPlaceholderCard('Mineral Sensor', 'No mineral nodes connected', Icons.science_rounded, showChart: false),
                     ),
                   ],
@@ -381,10 +380,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildCombinedSoilCard(String dId, SensorApiService apiService, bool isError) {
     final snap = apiService.latest;
-    final ecLatest = snap?.ec.toStringAsFixed(2) ?? '--';
-    final rhLatest = snap?.humidity.toStringAsFixed(1) ?? '--';
-    final ecColor = const Color(0xFF8D6E63);
-    final rhColor = const Color(0xFF29B6F6);
+    final tempLatest = snap?.temperature.toStringAsFixed(1) ?? '--';
+    final moistureLatest = snap?.soilMoisture.toStringAsFixed(1) ?? '--';
+    final n = snap?.nitrogen.round() ?? 0;
+    final p = snap?.phosphorus.round() ?? 0;
+    final k = snap?.potassium.round() ?? 0;
+    final tempColor = const Color(0xFFFF7043);
+    final moistureColor = const Color(0xFF29B6F6);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -403,7 +405,7 @@ class _DashboardPageState extends State<DashboardPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_deviceDisplayNames[dId] ?? 'Soil EC & RH', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: _kTextDark)),
+                  Text(_deviceDisplayNames[dId] ?? 'Soil Sensors', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: _kTextDark)),
                   Text(dId, style: GoogleFonts.inter(fontSize: 9, color: _kTextMuted)),
                 ],
               ),
@@ -414,24 +416,36 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _combinedValue('EC', ecLatest, 'mS/cm', ecColor),
+              _combinedValue('Temp', tempLatest, '°C', tempColor),
               const SizedBox(width: 24),
-              _combinedValue('RH', rhLatest, '%', rhColor),
+              _combinedValue('Moisture', moistureLatest, '%', moistureColor),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _npkLegend(const Color(0xFF9CCC65), 'N', n),
+              const SizedBox(width: 12),
+              _npkLegend(const Color(0xFFFFB74D), 'P', p),
+              const SizedBox(width: 12),
+              _npkLegend(const Color(0xFFBA68C8), 'K', k),
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(height: 80, child: MultiLineChart(series: [ChartSeries(data: apiService.ecHistory, color: ecColor, label: 'EC', normalize: 0.1), ChartSeries(data: apiService.humidHistory, color: rhColor, label: 'RH')])),
+          SizedBox(height: 80, child: MultiLineChart(series: [ChartSeries(data: apiService.tempHistory, color: tempColor, label: 'Temp'), ChartSeries(data: apiService.moistureHistory, color: moistureColor, label: 'Moisture')])),
         ],
       ),
     );
   }
 
-  Widget _buildNpkPieCard(String dId, SensorApiService apiService, bool isError) {
+  Widget _buildMineralCard(String dId, SensorApiService apiService, bool isError) {
     final snap = apiService.latest;
-    final n = snap?.nitrogen.round() ?? 0;
-    final p = snap?.phosphorus.round() ?? 0;
-    final k = snap?.potassium.round() ?? 0;
-    final ecVal = snap?.ec.toStringAsFixed(2) ?? '--';
+    final ecLatest = snap?.ec.toStringAsFixed(2) ?? '--';
+    final tempLatest = snap?.temperature.toStringAsFixed(1) ?? '--';
+    final phLatest = snap?.ph.toStringAsFixed(1) ?? '--';
+    final ecColor = const Color(0xFF8D6E63);
+    final tempColor = const Color(0xFFFF7043);
+    final phColor = const Color(0xFF66BB6A);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -454,62 +468,22 @@ class _DashboardPageState extends State<DashboardPage> {
                   Text(dId, style: GoogleFonts.inter(fontSize: 9, color: _kTextMuted)),
                 ],
               ),
+              const Spacer(),
+              _statusChip(isError),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 20,
+            runSpacing: 8,
+            children: [
+              _combinedValue('EC', ecLatest, 'mS/cm', ecColor),
+              _combinedValue('pH', phLatest, '', phColor),
+              _combinedValue('Temp', tempLatest, '°C', tempColor),
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _npkLegend(const Color(0xFF5C6BC0), 'N', n),
-                  const SizedBox(height: 6),
-                  _npkLegend(const Color(0xFF1A237E), 'P', p),
-                  const SizedBox(height: 6),
-                  _npkLegend(const Color(0xFFB0BEC5), 'K', k),
-                ],
-              ),
-              const Spacer(),
-              _buildCompactPieChart(n, p, k, ecVal),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactPieChart(int n, int p, int k, String ecVal) {
-    // If all are zero, show a placeholder segment to avoid fl_chart errors
-    final bool allZero = (n + p + k) == 0;
-    
-    return SizedBox(
-      width: 130,
-      height: 130,
-      child: Stack(
-        children: [
-          PieChart(
-            PieChartData(
-              sectionsSpace: 3,
-              centerSpaceRadius: 42,
-              startDegreeOffset: -90,
-              sections: allZero 
-                ? [PieChartSectionData(color: Colors.grey.withOpacity(0.1), value: 1, radius: 22, showTitle: false)]
-                : [
-                  PieChartSectionData(color: const Color(0xFF5C6BC0), value: n.toDouble(), radius: 22, showTitle: false),
-                  PieChartSectionData(color: const Color(0xFF1A237E), value: p.toDouble(), radius: 22, showTitle: false),
-                  PieChartSectionData(color: const Color(0xFFB0BEC5), value: k.toDouble(), radius: 22, showTitle: false),
-                ],
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(ecVal, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, color: _kTextDark)),
-                Text('EC', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: _kTextMuted)),
-              ],
-            ),
-          ),
+          SizedBox(height: 80, child: MultiLineChart(series: [ChartSeries(data: apiService.ecHistory, color: ecColor, label: 'EC', normalize: 0.1), ChartSeries(data: apiService.phHistory, color: phColor, label: 'pH'), ChartSeries(data: apiService.tempHistory, color: tempColor, label: 'Temp')])),
         ],
       ),
     );

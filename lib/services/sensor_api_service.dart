@@ -29,6 +29,7 @@ class SensorSnapshot {
   final bool lightOn;
   // Soil & Mineral fields
   final double ec;
+  final double ph;
   final double soilMoisture;
   final double nitrogen;
   final double phosphorus;
@@ -46,6 +47,7 @@ class SensorSnapshot {
     required this.eco2,
     required this.lightOn,
     this.ec = 0.0,
+    this.ph = 0.0,
     this.soilMoisture = 0.0,
     this.nitrogen = 0.0,
     this.phosphorus = 0.0,
@@ -78,6 +80,7 @@ class SensorSnapshot {
       eco2:        (data['eco2'] as num?)?.toInt() ?? 0,
       lightOn:     data['light_on'] == true || json['light_on'] == true,
       ec:          (data['ec'] as num?)?.toDouble() ?? 0.0,
+      ph:          (data['ph'] as num?)?.toDouble() ?? (data['pH'] as num?)?.toDouble() ?? (data['ph_value'] as num?)?.toDouble() ?? 0.0,
       soilMoisture: (data['soil_moisture'] as num?)?.toDouble() ?? (data['moisture'] as num?)?.toDouble() ?? 0.0,
       nitrogen:    (data['nitrogen'] as num?)?.toDouble() ?? (data['nitro'] as num?)?.toDouble() ?? (data['n'] as num?)?.toDouble() ?? 0.0,
       phosphorus:  (data['phosphorus'] as num?)?.toDouble() ?? (data['phos'] as num?)?.toDouble() ?? (data['p'] as num?)?.toDouble() ?? 0.0,
@@ -98,6 +101,7 @@ class SensorApiService {
   final List<Map<String, dynamic>> humidHistory = [];
   final List<Map<String, dynamic>> eco2History = [];
   final List<Map<String, dynamic>> ecHistory = [];
+  final List<Map<String, dynamic>> phHistory = [];
   final List<Map<String, dynamic>> moistureHistory = [];
   final List<Map<String, dynamic>> nitrogenHistory = [];
   final List<Map<String, dynamic>> phosphorusHistory = [];
@@ -168,6 +172,7 @@ class SensorApiService {
     humidHistory.add({'_time': ts, '_value': snapshot.humidity});
     eco2History.add({'_time': ts, '_value': snapshot.eco2});
     ecHistory.add({'_time': ts, '_value': snapshot.ec});
+    phHistory.add({'_time': ts, '_value': snapshot.ph});
     moistureHistory.add({'_time': ts, '_value': snapshot.soilMoisture});
     nitrogenHistory.add({'_time': ts, '_value': snapshot.nitrogen});
     phosphorusHistory.add({'_time': ts, '_value': snapshot.phosphorus});
@@ -178,6 +183,7 @@ class SensorApiService {
       humidHistory.removeAt(0);
       eco2History.removeAt(0);
       ecHistory.removeAt(0);
+      phHistory.removeAt(0);
       moistureHistory.removeAt(0);
       nitrogenHistory.removeAt(0);
       phosphorusHistory.removeAt(0);
@@ -217,6 +223,7 @@ class SensorApiService {
         humidHistory.clear();
         eco2History.clear();
         ecHistory.clear();
+        phHistory.clear();
         moistureHistory.clear();
         nitrogenHistory.clear();
         phosphorusHistory.clear();
@@ -229,6 +236,7 @@ class SensorApiService {
           humidHistory.add({'_time': ts, '_value': hs.humidity});
           eco2History.add({'_time': ts, '_value': hs.eco2});
           ecHistory.add({'_time': ts, '_value': hs.ec});
+          phHistory.add({'_time': ts, '_value': hs.ph});
           moistureHistory.add({'_time': ts, '_value': hs.soilMoisture});
           nitrogenHistory.add({'_time': ts, '_value': hs.nitrogen});
           phosphorusHistory.add({'_time': ts, '_value': hs.phosphorus});
@@ -260,6 +268,7 @@ class SensorApiService {
     humidHistory.clear();
     eco2History.clear();
     ecHistory.clear();
+    phHistory.clear();
     moistureHistory.clear();
     nitrogenHistory.clear();
     phosphorusHistory.clear();
@@ -272,6 +281,7 @@ class SensorApiService {
     humidHistory.clear();
     eco2History.clear();
     ecHistory.clear();
+    phHistory.clear();
     moistureHistory.clear();
     nitrogenHistory.clear();
     phosphorusHistory.clear();
@@ -283,6 +293,7 @@ class SensorApiService {
       humidHistory.add({'_time': ts, '_value': s.humidity});
       eco2History.add({'_time': ts, '_value': s.eco2});
       ecHistory.add({'_time': ts, '_value': s.ec});
+      phHistory.add({'_time': ts, '_value': s.ph});
       moistureHistory.add({'_time': ts, '_value': s.soilMoisture});
       nitrogenHistory.add({'_time': ts, '_value': s.nitrogen});
       phosphorusHistory.add({'_time': ts, '_value': s.phosphorus});

@@ -793,8 +793,11 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
     final isOffline = lastTime != null && DateTime.now().difference(lastTime).inSeconds > 60;
     final effectiveError = isError || isOffline;
 
-    final ec = snap?.ec.toStringAsFixed(2) ?? '--';
-    final moisture = snap?.humidity.toStringAsFixed(1) ?? '--';
+    final temp = snap?.temperature.toStringAsFixed(1) ?? '--';
+    final moisture = snap?.soilMoisture.toStringAsFixed(1) ?? '--';
+    final n = snap?.nitrogen.toStringAsFixed(0) ?? '--';
+    final p = snap?.phosphorus.toStringAsFixed(0) ?? '--';
+    final k = snap?.potassium.toStringAsFixed(0) ?? '--';
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
@@ -831,13 +834,20 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Row(
               children: [
-                _liveValue(PhosphorIcons.lightning(), '$ec mS/cm', 'EC',
-                    const Color(0xFF66BB6A)),
+                _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
+                    const Color(0xFFFF7043)),
                 const SizedBox(width: 6),
                 _liveValue(PhosphorIcons.drop(), '$moisture %',
                     'Moisture', const Color(0xFF29B6F6)),
-
-
+                const SizedBox(width: 6),
+                _liveValue(Icons.filter_vintage_rounded, '$n', 'N',
+                    const Color(0xFF9CCC65)),
+                const SizedBox(width: 6),
+                _liveValue(Icons.filter_vintage_rounded, '$p', 'P',
+                    const Color(0xFFFFB74D)),
+                const SizedBox(width: 6),
+                _liveValue(Icons.filter_vintage_rounded, '$k', 'K',
+                    const Color(0xFFBA68C8)),
               ],
             ),
           ),
@@ -850,14 +860,28 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                   height: 100,
                   series: [
                     ChartSeries(
-                        data: apiService.ecHistory,
-                        color: const Color(0xFF66BB6A),
-                        label: 'EC',
-                        normalize: 0.1),
+                        data: apiService.tempHistory,
+                        color: const Color(0xFFFF7043),
+                        label: 'Temp'),
                     ChartSeries(
-                        data: apiService.humidHistory,
+                        data: apiService.moistureHistory,
                         color: const Color(0xFF29B6F6),
-                        label: 'RH'),
+                        label: 'Moisture'),
+                    ChartSeries(
+                        data: apiService.nitrogenHistory,
+                        color: const Color(0xFF9CCC65),
+                        label: 'N',
+                        normalize: 10.0),
+                    ChartSeries(
+                        data: apiService.phosphorusHistory,
+                        color: const Color(0xFFFFB74D),
+                        label: 'P',
+                        normalize: 10.0),
+                    ChartSeries(
+                        data: apiService.potassiumHistory,
+                        color: const Color(0xFFBA68C8),
+                        label: 'K',
+                        normalize: 10.0),
                   ],
                 ),
               ),
@@ -865,12 +889,16 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                _legendDot(const Color(0xFF66BB6A), 'EC'),
-                const SizedBox(width: 8),
-                _legendDot(const Color(0xFF29B6F6), 'RH'),
-                const Spacer(),
+                _legendDot(const Color(0xFFFF7043), 'Temp'),
+                _legendDot(const Color(0xFF29B6F6), 'Moisture'),
+                _legendDot(const Color(0xFF9CCC65), 'N'),
+                _legendDot(const Color(0xFFFFB74D), 'P'),
+                _legendDot(const Color(0xFFBA68C8), 'K'),
                 Text(
                     effectiveError ? 'OFFLINE' : 'SOIL SENSOR',
                     style: GoogleFonts.inter(
@@ -914,15 +942,15 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
     final isOffline = lastTime != null && DateTime.now().difference(lastTime).inSeconds > 60;
     final effectiveError = isError || isOffline;
 
-    final n = snap?.nitrogen.toStringAsFixed(0) ?? '--';
-    final p = snap?.phosphorus.toStringAsFixed(0) ?? '--';
-    final k = snap?.potassium.toStringAsFixed(0) ?? '--';
+    final ec = snap?.ec.toStringAsFixed(2) ?? '--';
+    final temp = snap?.temperature.toStringAsFixed(1) ?? '--';
+    final ph = snap?.ph.toStringAsFixed(1) ?? '--';
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
       decoration: BoxDecoration(
-        color: effectiveError 
-            ? (Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade900.withOpacity(0.5) : Colors.grey.shade50) 
+        color: effectiveError
+            ? (Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade900.withOpacity(0.5) : Colors.grey.shade50)
             : _kSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -950,14 +978,14 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Row(
               children: [
-                _liveValue(Icons.filter_vintage_rounded, '$n', 'N',
-                    const Color(0xFF9CCC65)),
+                _liveValue(PhosphorIcons.lightning(), '$ec mS/cm', 'EC',
+                    const Color(0xFF8D6E63)),
                 const SizedBox(width: 6),
-                _liveValue(Icons.filter_vintage_rounded, '$p', 'P',
-                    const Color(0xFFFFB74D)),
+                _liveValue(Icons.science_outlined, ph, 'pH',
+                    const Color(0xFF66BB6A)),
                 const SizedBox(width: 6),
-                _liveValue(Icons.filter_vintage_rounded, '$k', 'K',
-                    const Color(0xFFBA68C8)),
+                _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
+                    const Color(0xFFFF7043)),
               ],
             ),
           ),
@@ -970,20 +998,18 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                   height: 100,
                   series: [
                     ChartSeries(
-                        data: apiService.nitrogenHistory,
-                        color: const Color(0xFF9CCC65),
-                        label: 'N',
-                        normalize: 10.0),
+                        data: apiService.ecHistory,
+                        color: const Color(0xFF8D6E63),
+                        label: 'EC',
+                        normalize: 0.1),
                     ChartSeries(
-                        data: apiService.phosphorusHistory,
-                        color: const Color(0xFFFFB74D),
-                        label: 'P',
-                        normalize: 10.0),
+                        data: apiService.phHistory,
+                        color: const Color(0xFF66BB6A),
+                        label: 'pH'),
                     ChartSeries(
-                        data: apiService.potassiumHistory,
-                        color: const Color(0xFFBA68C8),
-                        label: 'K',
-                        normalize: 10.0),
+                        data: apiService.tempHistory,
+                        color: const Color(0xFFFF7043),
+                        label: 'Temp'),
                   ],
                 ),
               ),
@@ -993,14 +1019,14 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Row(
               children: [
-                _legendDot(const Color(0xFF9CCC65), 'N'),
+                _legendDot(const Color(0xFF8D6E63), 'EC'),
                 const SizedBox(width: 8),
-                _legendDot(const Color(0xFFFFB74D), 'P'),
+                _legendDot(const Color(0xFF66BB6A), 'pH'),
                 const SizedBox(width: 8),
-                _legendDot(const Color(0xFFBA68C8), 'K'),
+                _legendDot(const Color(0xFFFF7043), 'Temp'),
                 const Spacer(),
                 Text(
-                    effectiveError ? 'OFFLINE' : 'NPK SENSOR',
+                    effectiveError ? 'OFFLINE' : 'MINERAL SENSOR',
                     style: GoogleFonts.inter(
                         fontSize: 8,
                         color: effectiveError ? Colors.red : _kGreen700,
