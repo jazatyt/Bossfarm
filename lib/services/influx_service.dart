@@ -5,7 +5,7 @@ class InfluxService {
       'VwUbP4LzvgmLFywvBtcb3AXcCzYV8GodaTTEjINHVGiygPAheul1zACig2vCNoLp8P79P9mPgkTOtEvJs6X8Pw==';
   final String org = 'myorg';
   final String bucket = 'esp32_sensors';
-  final String baseUrl = 'http://100.70.171.1:8086';
+  final String baseUrl = '${Uri.base.origin}/influx';
 
   List<String>? _cachedDeviceIds;
 

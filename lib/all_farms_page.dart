@@ -35,8 +35,6 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
       ? const Color(0xFFA0A0A0)
       : const Color(0xFF6B8068);
 
-  static const _baseUrl = 'http://100.70.171.1:5000';
-
   final LayoutApiService _layoutApi = LayoutApiService();
   Map<String, String> _deviceDisplayNames = {};
   final SensorDataManager _manager = SensorDataManager();
@@ -642,13 +640,13 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Row(
               children: [
-                _liveValue(PhosphorIcons.thermometer(), '$temp °C',
-                    'Temperature', const Color(0xFFFF7043)),
+                Expanded(child: _liveValue(PhosphorIcons.thermometer(), '$temp °C',
+                    'Temperature', const Color(0xFFFF7043))),
                 const SizedBox(width: 6),
-                _liveValue(PhosphorIcons.drop(), '$humid %',
-                    'Humidity', const Color(0xFF29B6F6)),
+                Expanded(child: _liveValue(PhosphorIcons.drop(), '$humid %',
+                    'Humidity', const Color(0xFF29B6F6))),
                 const SizedBox(width: 6),
-                _liveValue(
+                Expanded(child: _liveValue(
                     lightOn
                         ? PhosphorIcons.sun()
                         : PhosphorIcons.sunDim(),
@@ -656,10 +654,10 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                     'Light',
                     lightOn
                         ? const Color(0xFFFFCA28)
-                        : Colors.grey.shade400),
+                        : Colors.grey.shade400)),
                 const SizedBox(width: 6),
-                _liveValue(PhosphorIcons.cloud(), '$eco2', 'CO2',
-                    const Color(0xFF9575CD)),
+                Expanded(child: _liveValue(PhosphorIcons.cloud(), '$eco2', 'CO2',
+                    const Color(0xFF9575CD))),
 
 
 
@@ -723,27 +721,26 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
 
   Widget _liveValue(
       IconData icon, String value, String label, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 15),
-            const SizedBox(height: 4),
-            Text(value,
-                style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: _kTextDark),
-                overflow: TextOverflow.ellipsis),
-            Text(label,
-                style:
-                    GoogleFonts.inter(fontSize: 9, color: _kTextMuted)),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(height: 4),
+          Text(value,
+              style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: _kTextDark),
+              overflow: TextOverflow.ellipsis),
+          Text(label,
+              style:
+                  GoogleFonts.inter(fontSize: 9, color: _kTextMuted)),
+        ],
       ),
     );
   }
@@ -795,6 +792,8 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
 
     final temp = snap?.temperature.toStringAsFixed(1) ?? '--';
     final moisture = snap?.soilMoisture.toStringAsFixed(1) ?? '--';
+    final ec = snap?.ec.toStringAsFixed(2) ?? '--';
+    final ph = snap?.ph.toStringAsFixed(1) ?? '--';
     final n = snap?.nitrogen.toStringAsFixed(0) ?? '--';
     final p = snap?.phosphorus.toStringAsFixed(0) ?? '--';
     final k = snap?.potassium.toStringAsFixed(0) ?? '--';
@@ -834,20 +833,26 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Row(
               children: [
-                _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
-                    const Color(0xFFFF7043)),
+                Expanded(flex: 3, child: _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
+                    const Color(0xFFFF7043))),
                 const SizedBox(width: 6),
-                _liveValue(PhosphorIcons.drop(), '$moisture %',
-                    'Moisture', const Color(0xFF29B6F6)),
+                Expanded(flex: 3, child: _liveValue(PhosphorIcons.drop(), '$moisture %',
+                    'Moisture', const Color(0xFF29B6F6))),
                 const SizedBox(width: 6),
-                _liveValue(Icons.filter_vintage_rounded, '$n', 'N',
-                    const Color(0xFF9CCC65)),
+                Expanded(flex: 3, child: _liveValue(PhosphorIcons.lightning(), ec, 'EC',
+                    const Color(0xFF8D6E63))),
                 const SizedBox(width: 6),
-                _liveValue(Icons.filter_vintage_rounded, '$p', 'P',
-                    const Color(0xFFFFB74D)),
+                Expanded(flex: 3, child: _liveValue(Icons.science_outlined, ph, 'pH',
+                    const Color(0xFF66BB6A))),
                 const SizedBox(width: 6),
-                _liveValue(Icons.filter_vintage_rounded, '$k', 'K',
-                    const Color(0xFFBA68C8)),
+                Expanded(flex: 2, child: _liveValue(Icons.filter_vintage_rounded, '$n', 'N',
+                    const Color(0xFF9CCC65))),
+                const SizedBox(width: 6),
+                Expanded(flex: 2, child: _liveValue(Icons.filter_vintage_rounded, '$p', 'P',
+                    const Color(0xFFFFB74D))),
+                const SizedBox(width: 6),
+                Expanded(flex: 2, child: _liveValue(Icons.filter_vintage_rounded, '$k', 'K',
+                    const Color(0xFFBA68C8))),
               ],
             ),
           ),
@@ -857,7 +862,7 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: RepaintBoundary(
                 child: MultiLineChart(
-                  height: 100,
+                  expand: true,
                   series: [
                     ChartSeries(
                         data: apiService.tempHistory,
@@ -867,6 +872,15 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                         data: apiService.moistureHistory,
                         color: const Color(0xFF29B6F6),
                         label: 'Moisture'),
+                    ChartSeries(
+                        data: apiService.ecHistory,
+                        color: const Color(0xFF8D6E63),
+                        label: 'EC',
+                        normalize: 0.1),
+                    ChartSeries(
+                        data: apiService.phHistory,
+                        color: const Color(0xFF66BB6A),
+                        label: 'pH'),
                     ChartSeries(
                         data: apiService.nitrogenHistory,
                         color: const Color(0xFF9CCC65),
@@ -896,6 +910,8 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
               children: [
                 _legendDot(const Color(0xFFFF7043), 'Temp'),
                 _legendDot(const Color(0xFF29B6F6), 'Moisture'),
+                _legendDot(const Color(0xFF8D6E63), 'EC'),
+                _legendDot(const Color(0xFF66BB6A), 'pH'),
                 _legendDot(const Color(0xFF9CCC65), 'N'),
                 _legendDot(const Color(0xFFFFB74D), 'P'),
                 _legendDot(const Color(0xFFBA68C8), 'K'),
@@ -978,14 +994,14 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Row(
               children: [
-                _liveValue(PhosphorIcons.lightning(), '$ec mS/cm', 'EC',
-                    const Color(0xFF8D6E63)),
+                Expanded(child: _liveValue(PhosphorIcons.lightning(), ec, 'EC',
+                    const Color(0xFF8D6E63))),
                 const SizedBox(width: 6),
-                _liveValue(Icons.science_outlined, ph, 'pH',
-                    const Color(0xFF66BB6A)),
+                Expanded(child: _liveValue(Icons.science_outlined, ph, 'pH',
+                    const Color(0xFF66BB6A))),
                 const SizedBox(width: 6),
-                _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
-                    const Color(0xFFFF7043)),
+                Expanded(child: _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
+                    const Color(0xFFFF7043))),
               ],
             ),
           ),
@@ -995,7 +1011,7 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: RepaintBoundary(
                 child: MultiLineChart(
-                  height: 100,
+                  expand: true,
                   series: [
                     ChartSeries(
                         data: apiService.ecHistory,

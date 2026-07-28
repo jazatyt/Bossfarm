@@ -5,7 +5,7 @@ import 'layout_api_service.dart';
 
 
 class AuthService {
-  static const String baseUrl = 'http://localhost/farmapi';
+  static String get baseUrl => '${Uri.base.origin}/farmapi';
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {

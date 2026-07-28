@@ -30,8 +30,6 @@ const _kGreen900 = Color(0xFF1B5E20);
 const _kGreen700 = Color(0xFF2E7D32);
 const _kGreen400 = Color(0xFF66BB6A);
 
-const _kBaseUrl = 'http://100.70.171.1:5000';
-
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
 
@@ -382,11 +380,15 @@ class _DashboardPageState extends State<DashboardPage> {
     final snap = apiService.latest;
     final tempLatest = snap?.temperature.toStringAsFixed(1) ?? '--';
     final moistureLatest = snap?.soilMoisture.toStringAsFixed(1) ?? '--';
+    final ecLatest = snap?.ec.toStringAsFixed(2) ?? '--';
+    final phLatest = snap?.ph.toStringAsFixed(1) ?? '--';
     final n = snap?.nitrogen.round() ?? 0;
     final p = snap?.phosphorus.round() ?? 0;
     final k = snap?.potassium.round() ?? 0;
     final tempColor = const Color(0xFFFF7043);
     final moistureColor = const Color(0xFF29B6F6);
+    final ecColor = const Color(0xFF8D6E63);
+    final phColor = const Color(0xFF66BB6A);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -416,23 +418,38 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _combinedValue('Temp', tempLatest, '°C', tempColor),
-              const SizedBox(width: 24),
-              _combinedValue('Moisture', moistureLatest, '%', moistureColor),
+              _liveValue(PhosphorIcons.drop(), '$moistureLatest%', 'Moisture', moistureColor),
+              const SizedBox(width: 6),
+              _liveValue(PhosphorIcons.thermometer(), '$tempLatest°C', 'Temp', tempColor),
+              const SizedBox(width: 6),
+              _liveValue(Icons.science_outlined, phLatest, 'pH', phColor),
+              const SizedBox(width: 6),
+              _liveValue(PhosphorIcons.lightning(), ecLatest, 'EC', ecColor),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              _npkLegend(const Color(0xFF9CCC65), 'N', n),
-              const SizedBox(width: 12),
-              _npkLegend(const Color(0xFFFFB74D), 'P', p),
-              const SizedBox(width: 12),
-              _npkLegend(const Color(0xFFBA68C8), 'K', k),
+              _miniNutrientValue(Icons.filter_vintage_rounded, '$n', 'mg/kg', 'Nitrogen', const Color(0xFF9CCC65)),
+              const SizedBox(width: 6),
+              _miniNutrientValue(Icons.filter_vintage_rounded, '$p', 'mg/kg', 'Phosphorus', const Color(0xFFFFB74D)),
+              const SizedBox(width: 6),
+              _miniNutrientValue(Icons.filter_vintage_rounded, '$k', 'mg/kg', 'Potassium', const Color(0xFFBA68C8)),
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(height: 80, child: MultiLineChart(series: [ChartSeries(data: apiService.tempHistory, color: tempColor, label: 'Temp'), ChartSeries(data: apiService.moistureHistory, color: moistureColor, label: 'Moisture')])),
+          SizedBox(
+            height: 80,
+            child: MultiLineChart(series: [
+              ChartSeries(data: apiService.tempHistory, color: tempColor, label: 'Temp'),
+              ChartSeries(data: apiService.moistureHistory, color: moistureColor, label: 'Moisture'),
+              ChartSeries(data: apiService.ecHistory, color: ecColor, label: 'EC', normalize: 0.1),
+              ChartSeries(data: apiService.phHistory, color: phColor, label: 'pH'),
+              ChartSeries(data: apiService.nitrogenHistory, color: const Color(0xFF9CCC65), label: 'N', normalize: 10.0),
+              ChartSeries(data: apiService.phosphorusHistory, color: const Color(0xFFFFB74D), label: 'P', normalize: 10.0),
+              ChartSeries(data: apiService.potassiumHistory, color: const Color(0xFFBA68C8), label: 'K', normalize: 10.0),
+            ]),
+          ),
         ],
       ),
     );
@@ -473,17 +490,17 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 20,
-            runSpacing: 8,
+          Row(
             children: [
-              _combinedValue('EC', ecLatest, 'mS/cm', ecColor),
-              _combinedValue('pH', phLatest, '', phColor),
-              _combinedValue('Temp', tempLatest, '°C', tempColor),
+              _liveValue(PhosphorIcons.lightning(), ecLatest, 'EC', ecColor),
+              const SizedBox(width: 6),
+              _liveValue(Icons.science_outlined, phLatest, 'pH', phColor),
+              const SizedBox(width: 6),
+              _liveValue(PhosphorIcons.thermometer(), '$tempLatest°C', 'Temp', tempColor),
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(height: 80, child: MultiLineChart(series: [ChartSeries(data: apiService.ecHistory, color: ecColor, label: 'EC', normalize: 0.1), ChartSeries(data: apiService.phHistory, color: phColor, label: 'pH'), ChartSeries(data: apiService.tempHistory, color: tempColor, label: 'Temp')])),
+          Expanded(child: MultiLineChart(expand: true, series: [ChartSeries(data: apiService.ecHistory, color: ecColor, label: 'EC', normalize: 0.1), ChartSeries(data: apiService.phHistory, color: phColor, label: 'pH'), ChartSeries(data: apiService.tempHistory, color: tempColor, label: 'Temp')])),
         ],
       ),
     );
@@ -491,6 +508,47 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _npkLegend(Color color, String label, int value) {
     return Row(children: [Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), const SizedBox(width: 6), Text('$value $label', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _kTextDark))]);
+  }
+
+  Widget _miniNutrientValue(IconData icon, String value, String unit, String label, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 13),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(label,
+                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: _kTextMuted),
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextDark)),
+                const SizedBox(width: 3),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(unit, style: GoogleFonts.inter(fontSize: 9, color: _kTextMuted, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _combinedValue(String label, String value, String unit, Color color) {

@@ -21,6 +21,7 @@ class MultiLineChart extends StatelessWidget {
   final double height;
   final double? fixedMinY;
   final double? fixedMaxY;
+  final bool expand;
 
   const MultiLineChart({
     Key? key,
@@ -28,6 +29,7 @@ class MultiLineChart extends StatelessWidget {
     this.height = 80,
     this.fixedMinY,
     this.fixedMaxY,
+    this.expand = false,
   }) : super(key: key);
 
   @override
@@ -67,7 +69,7 @@ class MultiLineChart extends StatelessWidget {
     }
 
     return SizedBox(
-      height: height,
+      height: expand ? double.infinity : height,
       child: LineChart(
         LineChartData(
           clipData: const FlClipData.all(),
@@ -137,7 +139,7 @@ class MultiLineChart extends StatelessWidget {
             ),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
-                showTitles: true,
+                showTitles: false,
                 reservedSize: 50,
                 interval: ((maxY - minY) / 3).ceilToDouble().clamp(1, double.infinity),
                 getTitlesWidget: (value, _) {
@@ -205,14 +207,14 @@ class MultiLineChart extends StatelessWidget {
                     label = 'CO2';
                     unit = 'ppm';
                   } else if (lowerLabel == 'n') {
-                    label = 'Nitrogen';
-                    unit = 'ppm';
+                    label = 'N';
+                    unit = 'mg/kg';
                   } else if (lowerLabel == 'p') {
-                    label = 'Phosphorus';
-                    unit = 'ppm';
+                    label = 'P';
+                    unit = 'mg/kg';
                   } else if (lowerLabel == 'k') {
-                    label = 'Potassium';
-                    unit = 'ppm';
+                    label = 'K';
+                    unit = 'mg/kg';
                   }
 
                   final bool isFirst = s == touched.first;

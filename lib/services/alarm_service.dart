@@ -99,8 +99,8 @@ class AlarmItem {
 // ── Service ───────────────────────────────────────────────────────────────────
 
 class AlarmService {
-  static const _base = 'http://100.70.171.1:5000/api';
-  static const _thresholdBase = 'http://100.70.171.1:5000/api';
+  static String get _base => '${Uri.base.origin}/api';
+  static String get _thresholdBase => '${Uri.base.origin}/api';
 
   List<AlarmItem> activeAlarms  = [];
   List<AlarmItem> historyAlarms = [];

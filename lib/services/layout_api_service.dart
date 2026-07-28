@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class LayoutApiService {
-  static const String apiUrl = 'http://localhost/farmapi';
+  static String get apiUrl => '${Uri.base.origin}/farmapi';
 
   // Modified mapping object. Instead of flat Map<String, String>, it will return a generic Map.
   Future<Map<String, dynamic>> fetchLayout() async {

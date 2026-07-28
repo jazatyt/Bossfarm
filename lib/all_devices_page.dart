@@ -13,7 +13,6 @@ const _kGreen400  = Color(0xFF66BB6A);
 const _kSurface   = Color(0xFFFFFFFF);
 const _kTextDark  = Color(0xFF1A2E1A);
 const _kTextMuted = Color(0xFF6B8068);
-const _baseUrl = 'http://100.70.171.1:5000';
 
 class AllDevicesPage extends StatefulWidget {
   const AllDevicesPage({Key? key}) : super(key: key);

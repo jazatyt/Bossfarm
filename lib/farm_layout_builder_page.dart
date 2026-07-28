@@ -14,7 +14,7 @@ import 'widgets/top_bar.dart';
 
 enum BoardStatus { online, offline, alert }
 
-const String _kDeviceBaseUrl = 'http://100.70.171.1:5000';
+String get _kDeviceBaseUrl => Uri.base.origin;
 
 enum EditMode { none, zones, boards }
 

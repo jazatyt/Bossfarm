@@ -135,7 +135,7 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
   Future<void> _fetchDeviceListSilently() async {
     try {
       final res = await http
-          .get(Uri.parse('http://100.70.171.1:5000/api/devices'))
+          .get(Uri.parse('${Uri.base.origin}/api/devices'))
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
@@ -226,7 +226,7 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
       final deviceParam =
           _selectedDeviceId != null ? '&device_id=$_selectedDeviceId' : '';
       final url =
-          'http://100.70.171.1:5000/api/sensors/range'
+          '${Uri.base.origin}/api/sensors/range'
           '?start=$startStr&end=$endStr&every=$every$deviceParam';
 
       debugPrint('Fetching History: $url');
@@ -307,7 +307,7 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
     // ระบุ device_id ตรงๆ → API return history จาก DB ไม่ว่า device จะ online หรือไม่
     final deviceParam = deviceId != null ? '&device_id=$deviceId' : '';
     final url =
-        'http://100.70.171.1:5000/api/sensors/range'
+        '${Uri.base.origin}/api/sensors/range'
         '?start=$startStr&end=$endStr&every=$every$deviceParam';
 
     try {

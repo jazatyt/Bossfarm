@@ -10,7 +10,7 @@ class SensorDataManager extends ChangeNotifier {
   factory SensorDataManager() => _instance;
   SensorDataManager._internal();
 
-  final String _baseUrl = 'http://100.70.171.1:5000';
+  final String _baseUrl = Uri.base.origin;
 
   List<String> deviceIds = [];
   Map<String, String> deviceIps = {};
