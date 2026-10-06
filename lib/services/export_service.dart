@@ -9,16 +9,19 @@ import 'export_stub.dart'
     if (dart.library.html) 'export_web.dart';
 
 class ExportService {
+  // Soil splits further into 'soil_halisense' / 'soil_xsmec20' since the
+  // two probes publish genuinely different field sets (XS-MEC20 has no
+  // pH/N/P/K) — each needs its own sheet with matching columns.
   static String _getDeviceType(SensorSnapshot s) {
     // Priority: sensor_type_label from API
     final label = s.sensorTypeLabel?.toLowerCase() ?? '';
     if (label == 'environmental' || label == 'environment') return 'environmental';
-    if (label == 'soil') return 'soil';
+    if (label == 'soil') return s.soilModel == 1 ? 'soil_xsmec20' : 'soil_halisense';
     if (label == 'mineral') return 'mineral';
 
     // Fallback: legacy pattern matching
     final id = s.deviceId?.toLowerCase() ?? '';
-    if (id.contains('soil')) return 'soil';
+    if (id.contains('soil')) return s.soilModel == 1 ? 'soil_xsmec20' : 'soil_halisense';
     if (id.contains('min') || id.contains('npk') || id.contains('nitro'))
       return 'mineral';
     return 'environmental';
@@ -43,8 +46,8 @@ class ExportService {
         typeGroups.putIfAbsent(type, () => []).add(s);
       }
 
-      // Sort types: 1. environmental, 2. soil, 3. mineral
-      final List<String> sortedTypes = ['environmental', 'soil', 'mineral'];
+      // Sort types: 1. environmental, 2. soil (Halisense, then XS-MEC20), 3. mineral
+      final List<String> sortedTypes = ['environmental', 'soil_halisense', 'soil_xsmec20', 'mineral'];
       final List<String> availableSortedTypes = sortedTypes.where((t) => typeGroups.containsKey(t)).toList();
       // Add any other types if they exist
       for (var t in typeGroups.keys) {
@@ -59,7 +62,8 @@ class ExportService {
 
         String sheetName = 'Sensor History';
         if (multipleTypes) {
-          if (type == 'soil') sheetName = 'Soil Sensors';
+          if (type == 'soil_halisense') sheetName = 'Soil Sensors (Halisense)';
+          else if (type == 'soil_xsmec20') sheetName = 'Soil Sensors (XS-MEC20)';
           else if (type == 'mineral') sheetName = 'Mineral Sensors';
           else sheetName = 'Environmental Sensors';
         }
@@ -72,10 +76,12 @@ class ExportService {
           headers.add('Board');
         }
 
-        if (type == 'soil') {
-          headers.addAll(['(%) RH', 'EC']);
+        if (type == 'soil_halisense') {
+          headers.addAll(['Temp (°C)', 'Moisture (%)', 'EC', 'pH', 'N', 'P', 'K']);
+        } else if (type == 'soil_xsmec20') {
+          headers.addAll(['Temp (°C)', 'Moisture (%)', 'EC']);
         } else if (type == 'mineral') {
-          headers.addAll(['N', 'P', 'K', 'EC']);
+          headers.addAll(['EC', 'pH', 'Temp (°C)']);
         } else {
           headers.addAll(['Temp (°C)', '(%) RH', 'CO2 (ppm)', 'Lights']);
         }
@@ -93,14 +99,22 @@ class ExportService {
             row.add(TextCellValue(deviceDisplayNames?[id] ?? id));
           }
 
-          if (type == 'soil') {
-            row.add(DoubleCellValue(s.humidity != 0.0 ? s.humidity : s.soilMoisture));
+          if (type == 'soil_halisense') {
+            row.add(DoubleCellValue(s.temperature));
+            row.add(DoubleCellValue(s.soilMoisture));
             row.add(DoubleCellValue(s.ec));
-          } else if (type == 'mineral') {
+            row.add(DoubleCellValue(s.ph));
             row.add(DoubleCellValue(s.nitrogen));
             row.add(DoubleCellValue(s.phosphorus));
             row.add(DoubleCellValue(s.potassium));
+          } else if (type == 'soil_xsmec20') {
+            row.add(DoubleCellValue(s.temperature));
+            row.add(DoubleCellValue(s.soilMoisture));
             row.add(DoubleCellValue(s.ec));
+          } else if (type == 'mineral') {
+            row.add(DoubleCellValue(s.ec));
+            row.add(DoubleCellValue(s.ph));
+            row.add(DoubleCellValue(s.temperature));
           } else {
             row.add(DoubleCellValue(s.temperature));
             row.add(DoubleCellValue(s.humidity));

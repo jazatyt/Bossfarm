@@ -38,6 +38,10 @@ class SensorSnapshot {
   final String? deviceId;
   final int? sensorType;
   final String? sensorTypeLabel;
+  // Soil probe sub-type: 0 = Halisense (default/legacy), 1 = XS-MEC20.
+  // Independent of sensorType — only meaningful when sensorType == 2 ("soil").
+  final int soilModel;
+  final String soilModelLabel;
 
   SensorSnapshot({
     required this.time,
@@ -55,6 +59,8 @@ class SensorSnapshot {
     this.deviceId,
     this.sensorType,
     this.sensorTypeLabel,
+    this.soilModel = 0,
+    this.soilModelLabel = 'halisense',
   });
 
   static DateTime _parseDateTime(String? timeStr) {
@@ -88,6 +94,8 @@ class SensorSnapshot {
       deviceId:    (json['device_id'] ?? json['id'])?.toString(),
       sensorType: (data['sensor_type'] as num?)?.toInt(),
       sensorTypeLabel: data['sensor_type_label']?.toString(),
+      soilModel: (data['soil_model'] as num?)?.toInt() ?? 0,
+      soilModelLabel: data['soil_model_label']?.toString() ?? 'halisense',
     );
   }
 }

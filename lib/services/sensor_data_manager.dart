@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'sensor_api_service.dart';
+import 'mock_xsmec20_injector.dart'; // demo XS-MEC20 device — see that file for details
 
 class SensorDataManager extends ChangeNotifier {
   static final SensorDataManager _instance = SensorDataManager._internal();
@@ -54,6 +55,7 @@ class SensorDataManager extends ChangeNotifier {
     _loadCustomDevices(); // Load from Hive first
     _fetchRegistry();
     _startTimer();
+    maybeInjectMockXsMec20(this); // demo XS-MEC20 device — see mock_xsmec20_injector.dart
   }
 
   void _loadCustomDevices() {

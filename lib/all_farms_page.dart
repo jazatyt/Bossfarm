@@ -10,6 +10,7 @@ import 'services/sensor_api_service.dart';
 import 'widgets/multi_line_chart.dart';
 import 'services/layout_api_service.dart';
 import 'services/sensor_data_manager.dart';
+import 'services/mock_xsmec20_injector.dart' show isDemoDevice, demoDeviceBadge;
 import 'widgets/top_bar.dart';
 
 const _kGreen700 = Color(0xFF2E7D32);
@@ -39,7 +40,20 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
   Map<String, String> _deviceDisplayNames = {};
   final SensorDataManager _manager = SensorDataManager();
   String _selectedFilter = 'All';
+  // Sub-filter within Soil: 'All', 'Halisense', or 'XS-MEC20'. Both probes
+  // share sensor_type_label "soil", so this filters by each device's own
+  // soil_model rather than being a separate top-level category.
+  String _soilSubFilter = 'All';
   bool get isMobile => MediaQuery.of(context).size.width < 1000;
+
+  List<String> _applySoilSubFilter(List<String> ids) {
+    if (_soilSubFilter == 'All') return ids;
+    final wantXsMec20 = _soilSubFilter == 'XS-MEC20';
+    return ids.where((id) {
+      final model = _manager.apiServices[id]?.latest?.soilModel ?? 0;
+      return wantXsMec20 ? model == 1 : model == 0;
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -156,7 +170,7 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
           animation: _manager,
           builder: (__, _) {
             final elementIds = _manager.elementIds;
-            final soilIds = _manager.soilIds;
+            final soilIds = _applySoilSubFilter(_manager.soilIds);
             final mineralIds = _manager.mineralIds;
 
             bool hasData = false;
@@ -247,7 +261,10 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                       fontSize: 16),
                 ),
                 const Spacer(),
-                if (isMobile) _buildFilterDropdown(),
+                if (isMobile) ...[
+                  if (_selectedFilter == 'Soil') _buildSoilSubFilterDropdown(),
+                  _buildFilterDropdown(),
+                ],
               ],
             ),
           ),
@@ -326,6 +343,21 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             _buildSidebarFilterItem('All', PhosphorIcons.squaresFour()),
             _buildSidebarFilterItem('Environmental', PhosphorIcons.cloudSun()),
             _buildSidebarFilterItem('Soil', PhosphorIcons.plant()),
+            if (_selectedFilter == 'Soil') ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSoilSubFilterItem('All'),
+                    _buildSoilSubFilterItem('Halisense'),
+                    _buildSoilSubFilterItem('XS-MEC20'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
             _buildSidebarFilterItem('Mineral', PhosphorIcons.flask()),
 
 
@@ -354,6 +386,29 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
               textMuted: _kTextMuted,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSoilSubFilterItem(String value) {
+    final bool isSelected = _soilSubFilter == value;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: InkWell(
+        onTap: () => setState(() => _soilSubFilter = value),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? _kGreen700.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(value,
+              style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? _kGreen700 : _kTextMuted)),
         ),
       ),
     );
@@ -428,6 +483,32 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
               .map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(
                 value: value, child: Text(value));
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSoilSubFilterDropdown() {
+    return Container(
+      margin: const EdgeInsets.only(right: 8, top: 10, bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: _kBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kGreen700.withOpacity(0.2)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _soilSubFilter,
+          icon: const Icon(Icons.filter_list_rounded, color: _kGreen700, size: 16),
+          style: GoogleFonts.inter(color: _kGreen700, fontWeight: FontWeight.bold, fontSize: 11),
+          onChanged: (String? newValue) {
+            if (newValue != null) setState(() => _soilSubFilter = newValue);
+          },
+          items: <String>['All', 'Halisense', 'XS-MEC20']
+              .map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(value: value, child: Text(value));
           }).toList(),
         ),
       ),
@@ -745,6 +826,18 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
     );
   }
 
+  Widget _probeModelChip(int soilModel) {
+    final isXsMec20 = soilModel == 1;
+    final label = isXsMec20 ? 'XS-MEC20' : 'Halisense';
+    final color = isXsMec20 ? const Color(0xFF29B6F6) : _kGreen700;
+    return Container(
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(label, style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w700, color: color)),
+    );
+  }
+
   Widget _legendDot(Color color, String label) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -790,6 +883,21 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
     final isOffline = lastTime != null && DateTime.now().difference(lastTime).inSeconds > 60;
     final effectiveError = isError || isOffline;
 
+    if ((snap?.soilModel ?? 0) == 1) {
+      return _buildXsMec20SoilFarmCard(
+        title: title,
+        subtitle: subtitle,
+        ip: ip,
+        apiService: apiService,
+        isFetching: isFetching,
+        isError: isError,
+        onRetry: onRetry,
+        onTypeChange: onTypeChange,
+        onRename: onRename,
+        onDelete: onDelete,
+      );
+    }
+
     final temp = snap?.temperature.toStringAsFixed(1) ?? '--';
     final moisture = snap?.soilMoisture.toStringAsFixed(1) ?? '--';
     final ec = snap?.ec.toStringAsFixed(2) ?? '--';
@@ -830,6 +938,13 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                 onRename,
                 onDelete),
           Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+            child: Row(children: [
+              _probeModelChip(snap?.soilModel ?? 0),
+              if (isDemoDevice(subtitle)) ...[const SizedBox(width: 4), demoDeviceBadge()],
+            ]),
+          ),
+          Padding(
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Row(
               children: [
@@ -857,12 +972,26 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
             ),
           ),
           const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: SizedBox(
+              height: 36,
+              child: MultiLineChart(series: [
+                ChartSeries(
+                    data: apiService.ecHistory,
+                    color: const Color(0xFF8D6E63),
+                    label: 'EC'),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 6),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: RepaintBoundary(
                 child: MultiLineChart(
                   expand: true,
+                  independentScale: true,
                   series: [
                     ChartSeries(
                         data: apiService.tempHistory,
@@ -872,11 +1001,6 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                         data: apiService.moistureHistory,
                         color: const Color(0xFF29B6F6),
                         label: 'Moisture'),
-                    ChartSeries(
-                        data: apiService.ecHistory,
-                        color: const Color(0xFF8D6E63),
-                        label: 'EC',
-                        normalize: 0.1),
                     ChartSeries(
                         data: apiService.phHistory,
                         color: const Color(0xFF66BB6A),
@@ -915,6 +1039,139 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
                 _legendDot(const Color(0xFF9CCC65), 'N'),
                 _legendDot(const Color(0xFFFFB74D), 'P'),
                 _legendDot(const Color(0xFFBA68C8), 'K'),
+                Text(
+                    effectiveError ? 'OFFLINE' : 'SOIL SENSOR',
+                    style: GoogleFonts.inter(
+                        fontSize: 8,
+                        color: effectiveError ? Colors.red : _kGreen700,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    );
+  }
+
+  // XS-MEC20 variant: simplified 3-reading soil card (Temp, Moisture/VWC,
+  // EC only — no pH/N/P/K, the probe doesn't measure them).
+  Widget _buildXsMec20SoilFarmCard({
+    required String title,
+    required String subtitle,
+    required String ip,
+    required SensorApiService apiService,
+    required bool isFetching,
+    required bool isError,
+    required VoidCallback onRetry,
+    required Function(SensorType) onTypeChange,
+    required VoidCallback onRename,
+    required VoidCallback onDelete,
+  }) {
+    final snap = apiService.latest;
+    final lastTime = snap?.time;
+    final isOffline = lastTime != null && DateTime.now().difference(lastTime).inSeconds > 60;
+    final effectiveError = isError || isOffline;
+
+    final temp = snap?.temperature.toStringAsFixed(1) ?? '--';
+    final moisture = snap?.soilMoisture.toStringAsFixed(1) ?? '--';
+    final ec = snap?.ec.toStringAsFixed(2) ?? '--';
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      decoration: BoxDecoration(
+        color: effectiveError
+            ? (Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade900.withOpacity(0.5) : Colors.grey.shade50)
+            : _kSurface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+              color: effectiveError ? Colors.black.withOpacity(0.04) : _kGreen700.withOpacity(0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 6))
+        ],
+      ),
+      child: Opacity(
+        opacity: effectiveError ? 0.35 : 1.0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCardHeader(
+                _deviceDisplayNames[subtitle] ?? title,
+                subtitle,
+                ip,
+                effectiveError,
+                PhosphorIcons.plant(),
+                onTypeChange,
+                onRename,
+                onDelete),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+            child: Row(children: [
+              _probeModelChip(snap?.soilModel ?? 1),
+              if (isDemoDevice(subtitle)) ...[const SizedBox(width: 4), demoDeviceBadge()],
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+            child: Row(
+              children: [
+                Expanded(child: _liveValue(PhosphorIcons.thermometer(), '$temp °C', 'Temp',
+                    const Color(0xFFFF7043))),
+                const SizedBox(width: 6),
+                Expanded(child: _liveValue(PhosphorIcons.drop(), '$moisture %',
+                    'Moisture', const Color(0xFF29B6F6))),
+                const SizedBox(width: 6),
+                Expanded(child: _liveValue(PhosphorIcons.lightning(), ec, 'EC',
+                    const Color(0xFF8D6E63))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: SizedBox(
+              height: 36,
+              child: MultiLineChart(series: [
+                ChartSeries(
+                    data: apiService.ecHistory,
+                    color: const Color(0xFF8D6E63),
+                    label: 'EC'),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: RepaintBoundary(
+                child: MultiLineChart(
+                  expand: true,
+                  independentScale: true,
+                  series: [
+                    ChartSeries(
+                        data: apiService.tempHistory,
+                        color: const Color(0xFFFF7043),
+                        label: 'Temp'),
+                    ChartSeries(
+                        data: apiService.moistureHistory,
+                        color: const Color(0xFF29B6F6),
+                        label: 'Moisture'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _legendDot(const Color(0xFFFF7043), 'Temp'),
+                _legendDot(const Color(0xFF29B6F6), 'Moisture'),
+                _legendDot(const Color(0xFF8D6E63), 'EC'),
                 Text(
                     effectiveError ? 'OFFLINE' : 'SOIL SENSOR',
                     style: GoogleFonts.inter(
@@ -1012,12 +1269,12 @@ class _AllFarmsPageState extends State<AllFarmsPage> {
               child: RepaintBoundary(
                 child: MultiLineChart(
                   expand: true,
+                  independentScale: true,
                   series: [
                     ChartSeries(
                         data: apiService.ecHistory,
                         color: const Color(0xFF8D6E63),
-                        label: 'EC',
-                        normalize: 0.1),
+                        label: 'EC'),
                     ChartSeries(
                         data: apiService.phHistory,
                         color: const Color(0xFF66BB6A),

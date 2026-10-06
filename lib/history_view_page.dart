@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'widgets/multi_line_chart.dart';
 import 'widgets/top_bar.dart';
 import 'services/sensor_data_manager.dart'; // ✅ Added missing import
+import 'services/mock_xsmec20_injector.dart' show isDemoDevice, demoDeviceBadge;
 
 class HistoryViewPage extends StatefulWidget {
   final String? initialDeviceId;
@@ -53,6 +54,16 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
   final SensorDataManager _manager = SensorDataManager(); // ✅ Added missing manager
   Map<String, String> _deviceDisplayNames = {};
   final ValueNotifier<int> _contentRefreshNotifier = ValueNotifier(0);
+  final ScrollController _tableHeaderScrollController = ScrollController();
+  final ScrollController _tableDataScrollController = ScrollController();
+  bool _isSyncingTableScroll = false;
+
+  void _syncTableScroll(ScrollController source, ScrollController target) {
+    if (_isSyncingTableScroll || !target.hasClients) return;
+    _isSyncingTableScroll = true;
+    target.jumpTo(source.offset.clamp(0.0, target.position.maxScrollExtent));
+    _isSyncingTableScroll = false;
+  }
 
   String get _deviceType {
     if (_historyData.isNotEmpty) {
@@ -66,6 +77,14 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
     if (id.contains('min') || id.contains('npk') || id.contains('nitro'))
       return 'mineral';
     return 'environmental';
+  }
+
+  // Only meaningful when _deviceType == 'soil'. 0 = Halisense (default),
+  // 1 = XS-MEC20. Assumes the selected device/range is a single soil
+  // device, same assumption _deviceType already makes.
+  int get _soilModel {
+    if (_historyData.isNotEmpty) return _historyData.first.soilModel;
+    return 0;
   }
 
   @override
@@ -87,11 +106,18 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
         _fetchHistoryByRange(_selectedDateRange!, background: true);
       }
     });
+
+    _tableHeaderScrollController.addListener(() =>
+        _syncTableScroll(_tableHeaderScrollController, _tableDataScrollController));
+    _tableDataScrollController.addListener(() =>
+        _syncTableScroll(_tableDataScrollController, _tableHeaderScrollController));
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _tableHeaderScrollController.dispose();
+    _tableDataScrollController.dispose();
     super.dispose();
   }
 
@@ -772,10 +798,17 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
     }
 
     final type = _deviceType;
-    List<ChartSeries> series = [];
+    List<ChartSeries> chartsList = [];
 
     if (type == 'soil') {
-      series = [
+      chartsList = [
+        ChartSeries(
+            data: _filteredData
+                .map((s) =>
+                    {'_time': s.time.toIso8601String(), '_value': s.ec})
+                .toList(),
+            color: const Color(0xFF8D6E63),
+            label: 'EC'),
         ChartSeries(
             data: _filteredData
                 .map((s) => {
@@ -794,80 +827,72 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
                 .toList(),
             color: const Color(0xFF29B6F6),
             label: 'Moisture'),
+        // XS-MEC20 (soil_model 1) doesn't measure pH/N/P/K at all.
+        if (_soilModel != 1) ...[
+          ChartSeries(
+              data: _filteredData
+                  .map((s) =>
+                      {'_time': s.time.toIso8601String(), '_value': s.ph})
+                  .toList(),
+              color: const Color(0xFF66BB6A),
+              label: 'pH'),
+          ChartSeries(
+              data: _filteredData
+                  .map((s) => {
+                        '_time': s.time.toIso8601String(),
+                        '_value': s.nitrogen
+                      })
+                  .toList(),
+              color: const Color(0xFF9CCC65),
+              label: 'N'),
+          ChartSeries(
+              data: _filteredData
+                  .map((s) => {
+                        '_time': s.time.toIso8601String(),
+                        '_value': s.phosphorus
+                      })
+                  .toList(),
+              color: const Color(0xFFFFB74D),
+              label: 'P'),
+          ChartSeries(
+              data: _filteredData
+                  .map((s) => {
+                        '_time': s.time.toIso8601String(),
+                        '_value': s.potassium
+                      })
+                  .toList(),
+              color: const Color(0xFFBA68C8),
+              label: 'K'),
+        ],
+      ];
+    } else if (type == 'mineral') {
+      chartsList = [
         ChartSeries(
             data: _filteredData
                 .map((s) =>
                     {'_time': s.time.toIso8601String(), '_value': s.ec})
                 .toList(),
+            color: const Color(0xFF8D6E63),
+            label: 'EC'),
+        ChartSeries(
+            data: _filteredData
+                .map((s) =>
+                    {'_time': s.time.toIso8601String(), '_value': s.ph})
+                .toList(),
             color: const Color(0xFF66BB6A),
-            label: 'EC',
-            normalize: 0.1),
+            label: 'pH'),
         ChartSeries(
             data: _filteredData
                 .map((s) => {
                       '_time': s.time.toIso8601String(),
-                      '_value': s.nitrogen
+                      '_value': s.temperature
                     })
                 .toList(),
-            color: const Color(0xFF9CCC65),
-            label: 'N',
-            normalize: 10.0),
-        ChartSeries(
-            data: _filteredData
-                .map((s) => {
-                      '_time': s.time.toIso8601String(),
-                      '_value': s.phosphorus
-                    })
-                .toList(),
-            color: const Color(0xFFFFB74D),
-            label: 'P',
-            normalize: 10.0),
-        ChartSeries(
-            data: _filteredData
-                .map((s) => {
-                      '_time': s.time.toIso8601String(),
-                      '_value': s.potassium
-                    })
-                .toList(),
-            color: const Color(0xFFBA68C8),
-            label: 'K',
-            normalize: 10.0),
-      ];
-    } else if (type == 'mineral') {
-      series = [
-        ChartSeries(
-            data: _filteredData
-                .map((s) => {
-                      '_time': s.time.toIso8601String(),
-                      '_value': s.nitrogen
-                    })
-                .toList(),
-            color: const Color(0xFF9CCC65),
-            label: 'N',
-            normalize: 10.0),
-        ChartSeries(
-            data: _filteredData
-                .map((s) => {
-                      '_time': s.time.toIso8601String(),
-                      '_value': s.phosphorus
-                    })
-                .toList(),
-            color: const Color(0xFFFFB74D),
-            label: 'P',
-            normalize: 10.0),
-        ChartSeries(
-            data: _filteredData
-                .map((s) => {
-                      '_time': s.time.toIso8601String(),
-                      '_value': s.potassium
-                    })
-                .toList(),
-            color: const Color(0xFFBA68C8),
-            label: 'K',
-            normalize: 10.0),
+            color: const Color(0xFFFF7043),
+            label: 'Temp'),
       ];
     } else {
-      series = [
+      chartsList = [
         ChartSeries(
             data: _filteredData
                 .map((s) => {
@@ -892,8 +917,7 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
                     {'_time': s.time.toIso8601String(), '_value': s.eco2})
                 .toList(),
             color: const Color(0xFF9575CD),
-            label: 'CO2',
-            normalize: 25.0),
+            label: 'CO2'),
       ];
     }
 
@@ -918,6 +942,11 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: _kPrimary)),
+                  if (type == 'soil') ...[
+                    const SizedBox(width: 8),
+                    _probeModelChip(_soilModel),
+                    if (isDemoDevice(_selectedDeviceId ?? '')) ...[const SizedBox(width: 4), demoDeviceBadge()],
+                  ],
                 ],
               ),
               _buildChartLegend(type),
@@ -925,11 +954,23 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: MultiLineChart(
-              series: series,
-              height: 300,
-              fixedMinY: type == 'environmental' ? 0 : null,
-              fixedMaxY: type == 'environmental' ? 100 : null,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final s in chartsList) ...[
+                    Row(
+                      children: [
+                        Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6), decoration: BoxDecoration(shape: BoxShape.circle, color: s.color)),
+                        Text(s.label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: s.color)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(height: 70, child: MultiLineChart(series: [s], fitTooltipInside: true)),
+                    const SizedBox(height: 14),
+                  ],
+                ],
+              ),
             ),
           ),
         ],
@@ -942,16 +983,19 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
       return Wrap(spacing: 12, runSpacing: 4, children: [
         _legendItem(const Color(0xFFFF7043), 'Temp'),
         _legendItem(const Color(0xFF29B6F6), 'Moisture'),
-        _legendItem(const Color(0xFF66BB6A), 'EC'),
-        _legendItem(const Color(0xFF9CCC65), 'N'),
-        _legendItem(const Color(0xFFFFB74D), 'P'),
-        _legendItem(const Color(0xFFBA68C8), 'K'),
+        _legendItem(const Color(0xFF8D6E63), 'EC'),
+        if (_soilModel != 1) ...[
+          _legendItem(const Color(0xFF66BB6A), 'pH'),
+          _legendItem(const Color(0xFF9CCC65), 'N'),
+          _legendItem(const Color(0xFFFFB74D), 'P'),
+          _legendItem(const Color(0xFFBA68C8), 'K'),
+        ],
       ]);
     } else if (type == 'mineral') {
       return Wrap(spacing: 12, runSpacing: 4, children: [
-        _legendItem(const Color(0xFF9CCC65), 'N'),
-        _legendItem(const Color(0xFFFFB74D), 'P'),
-        _legendItem(const Color(0xFFBA68C8), 'K'),
+        _legendItem(const Color(0xFF8D6E63), 'EC'),
+        _legendItem(const Color(0xFF66BB6A), 'pH'),
+        _legendItem(const Color(0xFFFF7043), 'Temp'),
       ]);
     } else {
       return Wrap(spacing: 12, runSpacing: 4, children: [
@@ -978,6 +1022,17 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
                 color: _kTextMuted,
                 fontWeight: FontWeight.w600)),
       ],
+    );
+  }
+
+  Widget _probeModelChip(int soilModel) {
+    final isXsMec20 = soilModel == 1;
+    final label = isXsMec20 ? 'XS-MEC20' : 'Halisense';
+    final color = isXsMec20 ? const Color(0xFF29B6F6) : _kPrimary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
     );
   }
 
@@ -1434,6 +1489,7 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
           const Divider(height: 1),
 
           SingleChildScrollView(
+            controller: _tableHeaderScrollController,
             scrollDirection: Axis.horizontal,
             child: _buildHeaderRow(headers),
           ),
@@ -1441,6 +1497,7 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
 
           Expanded(
             child: SingleChildScrollView(
+              controller: _tableDataScrollController,
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               child: SizedBox(
@@ -1550,14 +1607,17 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
   }
 
   List<String> _tableHeaders(String type) {
-    if (type == 'soil') return ['Time', 'RH (%)', 'EC'];
-    if (type == 'mineral') return ['Time', 'N', 'P', 'K', 'EC'];
+    if (type == 'soil') {
+      if (_soilModel == 1) return ['Time', 'Temp', 'Moisture (%)', 'EC'];
+      return ['Time', 'Temp', 'Moisture (%)', 'EC', 'pH', 'N', 'P', 'K'];
+    }
+    if (type == 'mineral') return ['Time', 'EC', 'pH', 'Temp'];
     return ['Time', 'Temp', 'Humid', 'CO2 (ppm)', 'Lights'];
   }
 
   double _tableMinWidth(String type) {
-    if (type == 'soil') return 320;
-    if (type == 'mineral') return 420;
+    if (type == 'soil') return _soilModel == 1 ? 340 : 660;
+    if (type == 'mineral') return 340;
     return 460;
   }
 
@@ -1591,18 +1651,33 @@ class _HistoryViewPageState extends State<HistoryViewPage> {
   List<String> _buildCells(SensorSnapshot s, String type) {
     final time = '${DateFormat('dd/MM HH:mm').format(s.time)} (UTC+7)';
     if (type == 'soil') {
+      // Same structural assumption as _tableHeaders: the header row is
+      // built once from the first device's soil_model, so cells must
+      // match that column count/order, not each row's own model.
+      if (_soilModel == 1) {
+        return [
+          time,
+          '${s.temperature.toStringAsFixed(1)}°C',
+          '${s.soilMoisture.toStringAsFixed(1)}%',
+          s.ec.toStringAsFixed(2),
+        ];
+      }
       return [
         time,
-        '${(s.humidity != 0.0 ? s.humidity : s.soilMoisture).toStringAsFixed(1)}%',
+        '${s.temperature.toStringAsFixed(1)}°C',
+        '${s.soilMoisture.toStringAsFixed(1)}%',
         s.ec.toStringAsFixed(2),
+        s.ph.toStringAsFixed(1),
+        s.nitrogen.toStringAsFixed(1),
+        s.phosphorus.toStringAsFixed(1),
+        s.potassium.toStringAsFixed(1),
       ];
     } else if (type == 'mineral') {
       return [
         time,
-        s.nitrogen.toStringAsFixed(1),
-        s.phosphorus.toStringAsFixed(1),
-        s.potassium.toStringAsFixed(1),
         s.ec.toStringAsFixed(2),
+        s.ph.toStringAsFixed(1),
+        '${s.temperature.toStringAsFixed(1)}°C',
       ];
     } else {
       return [

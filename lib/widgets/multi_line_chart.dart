@@ -22,6 +22,8 @@ class MultiLineChart extends StatelessWidget {
   final double? fixedMinY;
   final double? fixedMaxY;
   final bool expand;
+  final bool independentScale;
+  final bool fitTooltipInside;
 
   const MultiLineChart({
     Key? key,
@@ -30,6 +32,8 @@ class MultiLineChart extends StatelessWidget {
     this.fixedMinY,
     this.fixedMaxY,
     this.expand = false,
+    this.independentScale = false,
+    this.fitTooltipInside = false,
   }) : super(key: key);
 
   @override
@@ -41,10 +45,42 @@ class MultiLineChart extends StatelessWidget {
     final List<LineChartBarData> bars = [];
     final List<FlSpot> allSpots = [];
     int maxPoints = 0;
+    // Only used when independentScale is true: real (un-normalized) min/max
+    // per series color, so the tooltip can reverse the 0-100 display value
+    // back to the actual reading.
+    final Map<Color, List<double>> seriesRealRange = {};
 
     for (var s in series) {
       if (s.data.isEmpty) continue;
-      final spots = _toSpots(s.data, normalize: s.normalize);
+      List<FlSpot> spots;
+      if (independentScale) {
+        final rawVals = <double>[];
+        final rawSpots = <FlSpot>[];
+        for (int i = 0; i < s.data.length; i++) {
+          final v = s.data[i]['_value'];
+          double? val;
+          if (v is num) val = v.toDouble();
+          else if (v is String) val = double.tryParse(v);
+          if (val != null) {
+            rawVals.add(val);
+            rawSpots.add(FlSpot(i.toDouble(), val));
+          }
+        }
+        if (rawVals.isEmpty) continue;
+        final seriesMin = rawVals.reduce((a, b) => a < b ? a : b);
+        final seriesMax = rawVals.reduce((a, b) => a > b ? a : b);
+        final range = seriesMax - seriesMin;
+        seriesRealRange[s.color] = [seriesMin, seriesMax];
+        // Map into an 8-92 band (not the full 0-100) so peaks/troughs that
+        // hit a series' own min/max never touch the chart's clip boundary.
+        spots = rawSpots
+            .map((p) => FlSpot(
+                p.x,
+                range == 0 ? 50 : 8 + ((p.y - seriesMin) / range) * 84))
+            .toList();
+      } else {
+        spots = _toSpots(s.data, normalize: s.normalize);
+      }
       allSpots.addAll(spots);
       bars.add(_bar(spots, s.color));
       if (s.data.length > maxPoints) maxPoints = s.data.length;
@@ -53,11 +89,14 @@ class MultiLineChart extends StatelessWidget {
     if (allSpots.isEmpty) return _noData();
 
     final double maxX = maxPoints > 0 ? (maxPoints - 1).toDouble() : 1.0;
-    
+
     double minY = fixedMinY ?? 0;
     double maxY = fixedMaxY ?? 100;
 
-    if (fixedMinY == null || fixedMaxY == null) {
+    if (independentScale) {
+      minY = 0;
+      maxY = 100;
+    } else if (fixedMinY == null || fixedMaxY == null) {
       final allY = allSpots.map((s) => s.y).toList();
       if (fixedMinY == null) {
         minY = (allY.reduce((a, b) => a < b ? a : b) - 2).clamp(0, double.infinity);
@@ -85,7 +124,7 @@ class MultiLineChart extends StatelessWidget {
             show: true,
             rightTitles: AxisTitles(
               sideTitles: SideTitles(
-                showTitles: series.any((s) => s.normalize != 1.0),
+                showTitles: !independentScale && series.any((s) => s.normalize != 1.0),
                 reservedSize: 40,
                 interval: ((maxY - minY) / 3).ceilToDouble().clamp(1, double.infinity),
                 getTitlesWidget: (value, _) {
@@ -174,6 +213,8 @@ class MultiLineChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
               getTooltipColor: (_) => Colors.black87,
+              fitInsideVertically: fitTooltipInside,
+              fitInsideHorizontally: fitTooltipInside,
               getTooltipItems: (touched) {
                 if (touched.isEmpty) return [];
                 
@@ -191,7 +232,15 @@ class MultiLineChart extends StatelessWidget {
 
                 return touched.map((s) {
                   final match = series.firstWhere((ser) => ser.color == s.bar.color, orElse: () => series.first);
-                  double displayVal = s.y * match.normalize;
+                  double displayVal;
+                  if (independentScale && seriesRealRange.containsKey(s.bar.color)) {
+                    final range = seriesRealRange[s.bar.color]!;
+                    final realMin = range[0];
+                    final realMax = range[1];
+                    displayVal = realMin + ((s.y - 8) / 84) * (realMax - realMin);
+                  } else {
+                    displayVal = s.y * match.normalize;
+                  }
                   
                   String label = match.label;
                   String unit = '';
